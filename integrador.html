@@ -33,7 +33,7 @@
             try {
                 const response = await fetch(API_URL_LIST);
                 const data = await response.json();
-                return data.find(integrador => String(integrador.id) === String(id)) || {
+                return data.find(integrador => int(integrador.id) === int(id)) || {
                     nome_do_integrador: 'Integrador Não Encontrado',
                     numero_de_contato: ''
                 };
@@ -69,7 +69,8 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', async function() {
-            const integradorId = getQueryParam('id');
+            const integradorId = parseInt(getQueryParam('id'));
+            
             const integradorInfo = await fetchIntegradorInfo(integradorId);
             renderIntegradorInfo(integradorInfo);
         });
