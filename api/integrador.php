@@ -2,15 +2,33 @@
 // Define que a resposta será em formato JSON
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *"); // Permite requisições de qualquer origem (CORS)
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-// --- INFORMAÇÕES DO BANCO DE DADOS ---
-// IMPORTANTE: Substitua com os dados do banco de dados que você criou na Hostinger
-$db_host = 'SEU_DB_HOST';       // Ex: sqlXXX.main-hosting.eu
-$db_name = 'SEU_DB_NAME';       // Ex: u123456789_minhadb
-$db_user = 'SEU_DB_USER';       // Ex: u123456789_meuuser
-$db_pass = 'SUA_DB_SENHA';
+// O navegador envia uma requisição OPTIONS (pre-flight) para verificar o CORS.
+// É importante responder a ela com sucesso para que a requisição POST seja enviada.
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// --- CARREGA AS CONFIGURAÇÕES SEGURAS ---
+// O caminho '../..' sobe dois níveis de diretório (de /api/ para /public_html/ e depois para a raiz)
+// para encontrar o arquivo config.php
+$configFile = __DIR__ . '/../../config.php';
+
+if (!file_exists($configFile)) {
+    http_response_code(500);
+    echo json_encode(['message' => 'Erro crítico: Arquivo de configuração não encontrado.']);
+    exit();
+}
+
+$config = require $configFile;
+
+$db_host = $config['db_host'];
+$db_name = $config['db_name'];
+$db_user = $config['db_user'];
+$db_pass = $config['db_pass'];
 
 // Tenta conectar ao banco de dados
 try {
@@ -20,7 +38,7 @@ try {
     // Se a conexão falhar, retorna um erro 500
     http_response_code(500);
     echo json_encode(['message' => 'Erro de conexão com o banco de dados.', 'details' => $e->getMessage()]);
-    exit(); // Encerra o script
+    exit();
 }
 
 // Verifica se o método da requisição é POST
@@ -33,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Pega os dados JSON enviados no corpo da requisição
 $data = json_decode(file_get_contents("php://input"));
 
-// Valida se os dados foram recebidos
-if (!isset($data->nome_do_integrador) || !isset($data->numero_de_contato)) {
+// Valida se os dados foram recebidos e não estão vazios
+if (empty($data->nome_do_integrador) || empty($data->numero_de_contato)) {
     http_response_code(400); // Bad Request
     echo json_encode(['message' => 'Nome e numero de contato são obrigatórios.']);
     exit();
@@ -61,5 +79,4 @@ try {
     http_response_code(500);
     echo json_encode(['message' => 'Erro interno ao inserir dados no DB.', 'details' => $e->getMessage()]);
 }
-
 ?>
