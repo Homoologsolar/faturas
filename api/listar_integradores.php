@@ -4,10 +4,11 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 
 // Carrega as configurações seguras do banco de dados
-
-$config =  __DIR__ . '../../config.php';
+$configFile = __DIR__ . '/../../config.php'; // Define o caminho
+$config = require $configFile; // Carrega o array de configuração
 
 try {
+    // Agora $config é um array e pode ser usado corretamente
     $pdo = new PDO("mysql:host={$config['db_host']};dbname={$config['db_name']};charset=utf8", $config['db_user'], $config['db_pass']);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {

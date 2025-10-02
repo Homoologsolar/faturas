@@ -3,9 +3,11 @@
 
 
 header('Content-Type: application/json');
-$config =  __DIR__ . '../../config.php';
+$configFile = __DIR__ . '/../../config.php'; // Define o caminho
+$config = require $configFile; // Carrega o array de configuração
 
 try {
+    // Agora $config é um array e pode ser usado corretamente
     $pdo = new PDO("mysql:host={$config['db_host']};dbname={$config['db_name']};charset=utf8", $config['db_user'], $config['db_pass']);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
@@ -19,14 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     echo json_encode(['message' => 'Método não permitido. Utilize DELETE.']);
     exit();
 }
-// Pega os dados JSON enviados no corpo da requisição
-$data = json_decode(file_get_contents("php://input"));
-// Valida se o ID foi recebido
-if (empty($data->id)) {
+// Valida se o ID foi recebido via URL
+if (empty($_GET['id'])) { // Lê o ID da URL
     http_response_code(400); // Bad Request
     echo json_encode(['message' => 'ID do integrador é obrigatório.']); 
     exit();
 }
+
+// Pega o ID
+$id = $_GET['id'];
+
 // Prepara a query SQL para evitar SQL Injection
 $sql = "DELETE FROM integradores WHERE id = ?";
 $stmt = $pdo->prepare($sql);
