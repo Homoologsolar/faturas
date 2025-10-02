@@ -33,6 +33,7 @@
             try {
                 const response = await fetch(API_URL_LIST);
                 const data = await response.json();
+                console.log(data);
                 return data.find(integrador => int(integrador.id) === int(id)) || {
                     nome_do_integrador: 'Integrador Não Encontrado',
                     numero_de_contato: ''
