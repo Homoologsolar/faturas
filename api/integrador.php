@@ -15,7 +15,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 // --- CARREGA AS CONFIGURAÇÕES SEGURAS ---
 // O caminho '../..' sobe dois níveis de diretório (de /api/ para /public_html/ e depois para a raiz)
 // para encontrar o arquivo config.php
-$configFile = __DIR__ . '/../../config.php';
+
+$path_producao = __DIR__ . '/../../config.php';
+$path_local = __DIR__ . '/../config.php';
+
+if (file_exists($path_producao)) {
+    // Se encontrou o arquivo na estrutura da Hostinger (produção)
+    $config = require $path_producao;
+} elseif (file_exists($path_local)) {
+    // Se encontrou o arquivo na estrutura local (desenvolvimento)
+    $config = require $path_local;
+} else {
+    // Se não encontrou nenhum, retorna um erro crítico
+    http_response_code(500);
+    echo json_encode(['message' => 'Erro crítico: Arquivo de configuração não encontrado em nenhum ambiente.']);
+    exit();
+}
+
+// O restante do seu código continua exatamente o mesmo...
+$db_host = $config['db_host'];
 
 if (!file_exists($configFile)) {
     http_response_code(500);

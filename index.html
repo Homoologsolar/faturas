@@ -52,6 +52,20 @@
 
         const API_URL_CREATE = '/api/integrador.php';
         const API_URL_LIST = '/api/listar_integradores.php';
+        const API_URL_DELETE = '/api/delet_integrador.php'; 
+
+        async function deleteIntegrador(id) {
+            if (!confirm('Tem certeza que deseja deletar este integrador?')) return;
+            try {
+                const response = await fetch(`${API_URL_DELETE}?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (!response.ok) { throw new Error(result.message); }
+                alert('Integrador deletado com sucesso!');
+                fetchIntegradores(); // Atualiza a lista após a deleção
+            } catch (error) {
+                alert(`Erro ao deletar integrador: ${error.message}`);
+            }
+        }
 
         async function fetchIntegradores() {
             listaUl.innerHTML = '<li>Carregando...</li>';
@@ -70,6 +84,12 @@
                         const li = document.createElement('li');
                         li.textContent = `${integrador.nome_do_integrador} - ${integrador.numero_de_contato}`;
                         listaUl.appendChild(li);
+                        // Adiciona botão de deletar
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Deletar';
+                        deleteButton.style.marginLeft = '10px';
+                        deleteButton.onclick = () => deleteIntegrador(integrador.id);
+                        li.appendChild(deleteButton);
                     });
                 } else {
                     listaUl.innerHTML = '<li>Nenhum integrador cadastrado.</li>';

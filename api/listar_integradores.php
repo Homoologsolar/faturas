@@ -4,7 +4,25 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 
 // Carrega as configurações seguras do banco de dados
-$config = require __DIR__ . '/../../config.php';
+
+$path_producao = __DIR__ . '/../../config.php';
+$path_local = __DIR__ . '/../config.php';
+
+if (file_exists($path_producao)) {
+    // Se encontrou o arquivo na estrutura da Hostinger (produção)
+    $config = require $path_producao;
+} elseif (file_exists($path_local)) {
+    // Se encontrou o arquivo na estrutura local (desenvolvimento)
+    $config = require $path_local;
+} else {
+    // Se não encontrou nenhum, retorna um erro crítico
+    http_response_code(500);
+    echo json_encode(['message' => 'Erro crítico: Arquivo de configuração não encontrado em nenhum ambiente.']);
+    exit();
+}
+
+// O restante do seu código continua exatamente o mesmo...
+$db_host = $config['db_host'];
 
 try {
     $pdo = new PDO("mysql:host={$config['db_host']};dbname={$config['db_name']};charset=utf8", $config['db_user'], $config['db_pass']);
