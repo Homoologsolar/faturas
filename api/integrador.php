@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 // --- CARREGA AS CONFIGURAÇÕES SEGURAS ---
 // O caminho '../..' sobe dois níveis de diretório (de /api/ para /public_html/ e depois para a raiz)
 // para encontrar o arquivo config.php
-$configFile = __DIR__ . '/../../config.php';
+$config =  __DIR__ . '../../config.php';
 
 if (!file_exists($configFile)) {
     http_response_code(500);
