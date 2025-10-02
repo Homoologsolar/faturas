@@ -16,19 +16,62 @@
 </head>
 <body>
     <div class="container">
-        <h1>Integrador</h1>
-        <form id="integrador-form">
-            <label for="data">Dados para integração:</label>
-            <input type="text" id="data" name="data" placeholder="Digite os dados..." required>
-            <button type="submit">Enviar</button>
-        </form>
-        <div id="result" style="margin-top:1rem;"></div>
+        <!-- integrador info will be rendered here -->
     </div>
     <script>
-        document.getElementById('integrador-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = document.getElementById('data').value;
-            document.getElementById('result').textContent = `Dados enviados: ${data}`;
+        // Config
+        const API_URL_LIST = '/api/integradores'; // Ajuste conforme necessário
+
+        // Utilitário para obter parâmetro da query string
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Busca info do integrador
+        async function fetchIntegradorInfo(id) {
+            try {
+                const response = await fetch(API_URL_LIST);
+                const data = await response.json();
+                return data.find(integrador => String(integrador.id) === String(id)) || {
+                    nome_do_integrador: 'Integrador Não Encontrado',
+                    numero_de_contato: ''
+                };
+            } catch (e) {
+                return {
+                    nome_do_integrador: 'Erro ao buscar integrador',
+                    numero_de_contato: ''
+                };
+            }
+        }
+
+        // Renderiza info e formulário
+        function renderIntegradorInfo(info) {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <h1>${info.nome_do_integrador}</h1>
+                <p>${info.numero_de_contato}</p>
+                <form id="integrador-form">
+                    <label for="data">Dados:</label>
+                    <input type="text" id="data" name="data" required>
+                    <button type="submit">Enviar</button>
+                </form>
+                <div id="result" style="margin-top:1rem;"></div>
+            `;
+            // Adiciona listener ao form após renderizar
+            const form = document.getElementById('integrador-form');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const data = document.getElementById('data').value;
+                document.getElementById('result').textContent = `Dados enviados: ${data}`;
+            });
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            const integradorId = getQueryParam('id');
+            const integradorInfo = await fetchIntegradorInfo(integradorId);
+            renderIntegradorInfo(integradorInfo);
         });
     </script>
 </body>
