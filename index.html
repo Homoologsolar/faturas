@@ -83,13 +83,25 @@
                     integradores.forEach(integrador => {
                         const li = document.createElement('li');
                         li.textContent = `${integrador.nome_do_integrador} - ${integrador.numero_de_contato}`;
-                        listaUl.appendChild(li);
+                        li.className = 'integrador-item';
+                        li.style.cursor = 'pointer';
+                        li.onclick = (e) => {
+                            // Evita que o clique no botão delete acione o evento do li
+                            if (e.target.tagName.toLowerCase() === 'button') return;
+                            // Abre a página do integrador (ajuste a URL conforme necessário)
+                            const url = `/integrador.html?id=${integrador.id}`;
+                            window.open(url, '_blank');
+                        };
                         // Adiciona botão de deletar
                         const deleteButton = document.createElement('button');
                         deleteButton.textContent = 'Deletar';
                         deleteButton.style.marginLeft = '10px';
-                        deleteButton.onclick = () => deleteIntegrador(integrador.id);
+                        deleteButton.onclick = (e) => {
+                            e.stopPropagation(); // Impede o clique de propagar para o li
+                            deleteIntegrador(integrador.id);
+                        };
                         li.appendChild(deleteButton);
+                        listaUl.appendChild(li);
                     });
                 } else {
                     listaUl.innerHTML = '<li>Nenhum integrador cadastrado.</li>';
@@ -99,7 +111,7 @@
                 listaUl.innerHTML = `<li style="border-color: #842029; color: #842029;">${error.message}</li>`;
             }
         }
-
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitButton.disabled = true;
