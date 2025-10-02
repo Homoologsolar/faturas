@@ -112,6 +112,36 @@
             <div id="message"></div>
         </form>
     </div>
+    <div>
+        integradores cadastrados:
+        <ul>
+
+        </ul>   
+    </div>
+
+
+<script>
+    // Função para buscar e exibir os integradores cadastrados
+    async function fetchIntegradores() {
+        try {
+            const response = await fetch('api/integrador.php');
+            const integradores = await response.json();
+            const list = document.querySelector('div ul');
+            list.innerHTML = ''; // Limpa a lista antes de adicionar novos itens
+            integradores.forEach(integrador => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `ID: ${integrador.id}, Nome: ${integrador.nome_do_integrador}, Contato: ${integrador.numero_de_contato}`;
+                list.appendChild(listItem);
+            });
+        } catch (error) {
+            console.error('Erro ao buscar integradores:', error);
+        }
+    }
+
+    // Chama a função para buscar integradores ao carregar a página
+    window.onload = fetchIntegradores;
+    
+</script>
 
     <script>
         const form = document.getElementById('integradorForm');
