@@ -50,9 +50,9 @@
         const messageDiv = document.getElementById('message');
         const listaUl = document.getElementById('integradores-lista');
 
-        const API_URL_CREATE = '/api/integrador.php';
-        const API_URL_LIST = '/api/listar_integradores.php';
-        const API_URL_DELETE = '/api/delete_integrador.php'; 
+        const API_URL_CREATE = 'api/integrador.php';
+        const API_URL_LIST = 'api/listar_integradores.php';
+        const API_URL_DELETE = 'api/delete_integrador.php'; 
 
         async function deleteIntegrador(id) {
             if (!confirm('Tem certeza que deseja deletar este integrador?')) return;
