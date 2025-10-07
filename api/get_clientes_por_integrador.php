@@ -4,7 +4,7 @@
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 
-$configFile = __DIR__ . '/../config.php';
+$configFile = __DIR__ . '/../../config.php';
 $config = require $configFile;
 
 try {

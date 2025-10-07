@@ -4,7 +4,7 @@
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 
-$configFile = __DIR__ . '/../config.php';
+$configFile = __DIR__ . '/../../config.php';
 if (!file_exists($configFile)) {
     http_response_code(500);
     echo json_encode(['message' => 'Erro: Arquivo de configuração não encontrado.']);

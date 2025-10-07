@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$configFile = __DIR__ . '/../config.php';
+$configFile = __DIR__ . '/../../config.php';
 $config = require $configFile;
 
 try {
