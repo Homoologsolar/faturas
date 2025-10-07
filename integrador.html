@@ -1,79 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Integrador</title>
+    <title>Detalhes do Integrador</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
-        h1 { color: #2c3e50; }
-        label { display: block; margin-top: 1rem; }
-        input, button { width: 100%; padding: 0.5rem; margin-top: 0.5rem; }
-        button { background: #2980b9; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #3498db; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: #f8f9fa; margin: 20px; }
+        .container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 700px; box-sizing: border-box; }
+        .integrador-info { text-align: center; border-bottom: 1px solid #dee2e6; padding-bottom: 20px; margin-bottom: 20px; }
+        .integrador-info h1 { color: #212529; margin-top: 0; margin-bottom: 10px; font-size: 24px; }
+        .integrador-info p { color: #495057; font-size: 18px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        h2 { text-align: center; color: #343a40; margin-bottom: 20px; }
+        button, .action-btn { background-color: #ff9900; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        .error-message { background-color: #f8d7da; color: #842029; padding: 15px; border-radius: 6px; text-align: center; }
+        .back-link { display: inline-block; margin-top: 20px; color: #ff9900; text-decoration: none; font-weight: 600; }
+        #clientes-lista { list-style-type: none; padding: 0; margin: 0; }
+        #clientes-lista li { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ff9900; display: flex; justify-content: space-between; align-items: center; }
+        .ver-faturas-btn { background-color: #28a745 !important; }
+        /* Estilos para o formulário de cliente */
+        #cadastro-cliente-section { display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #495057; }
+        input[type="text"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+        #message-cliente { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; display: none; }
+        .success { background-color: #d1e7dd; color: #0f5132; display: block; }
+        .error { background-color: #f8d7da; color: #842029; display: block; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- integrador info will be rendered here -->
-    </div>
-    <script>
-        // Config
-        const API_URL_LIST = '/api/listar_integradores.php'; // Ajuste conforme necessário
 
-        // Utilitário para obter parâmetro da query string
+    <div class="container" id="main-container">
+        <div id="loading-state"><p>Carregando informações...</p></div>
+    </div>
+
+    <script>
+        const API_URL_GET_INTEGRADOR = 'api/get_integrador.php';
+        const API_URL_GET_CLIENTES = 'api/get_clientes_por_integrador.php';
+        const API_URL_CADASTRAR_CLIENTE = 'api/cadastrar_cliente.php';
+
+        const container = document.getElementById('main-container');
+
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
 
-        // Busca info do integrador
-        async function fetchIntegradorInfo(id) {
-            try {
-                const response = await fetch(API_URL_LIST);
-                const data = await response.json();
-                console.log(data);
-                return data.find(integrador => parseInt(integrador.id) === id) || {
-                    nome_do_integrador: 'Integrador Não Encontrado',
-                    numero_de_contato: ''
-                };
-            } catch (e) {
-                return {
-                    nome_do_integrador: 'Erro ao buscar integrador',
-                    numero_de_contato: ''
-                };
+        async function fetchApiData(url, options = {}) {
+            const response = await fetch(url, options);
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Falha na requisição.');
+            return result;
+        }
+
+        function render(htmlContent) {
+            container.innerHTML = htmlContent;
+        }
+
+        async function refreshClientes(integradorId) {
+            const clientesListaEl = document.getElementById('clientes-lista');
+            clientesListaEl.innerHTML = '<li>Carregando clientes...</li>';
+             try {
+                const clientes = await fetchApiData(`${API_URL_GET_CLIENTES}?integrador_id=${integradorId}`);
+                if (clientes.length > 0) {
+                    clientesListaEl.innerHTML = clientes.map(cliente => `
+                        <li>
+                            <div>
+                                <div class="cliente-info">${cliente.nome}</div>
+                                <div class="cliente-uc">UC: ${cliente.codigo_uc}</div>
+                            </div>
+                            <a href="faturas.html?cliente_id=${cliente.id}" class="action-btn ver-faturas-btn">Ver Faturas</a>
+                        </li>
+                    `).join('');
+                } else {
+                    clientesListaEl.innerHTML = '<li>Nenhum cliente vinculado a este integrador.</li>';
+                }
+            } catch (error) {
+                 clientesListaEl.innerHTML = `<li style="border-color: #dc3545; color: #dc3545;">${error.message}</li>`;
             }
         }
 
-        // Renderiza info e formulário
-        function renderIntegradorInfo(info) {
-            const container = document.querySelector('.container');
-            container.innerHTML = `
-                <h1>${info.nome_do_integrador}</h1>
-                <p>${info.numero_de_contato}</p>
-                <form id="integrador-form">
-                    <label for="data">Dados:</label>
-                    <input type="text" id="data" name="data" required>
-                    <button type="submit">Enviar</button>
-                </form>
-                <div id="result" style="margin-top:1rem;"></div>
-            `;
-            // Adiciona listener ao form após renderizar
-            const form = document.getElementById('integrador-form');
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const data = document.getElementById('data').value;
-                document.getElementById('result').textContent = `Dados enviados: ${data}`;
-            });
-        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            const integradorId = parseInt(getQueryParam('id'), 10);
+            if (!integradorId || isNaN(integradorId)) {
+                render(`<div class="error-message">ID do integrador é inválido.</div>`);
+                return;
+            }
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', async function() {
-            const integradorId = parseInt(getQueryParam('id'));
-            
-            const integradorInfo = await fetchIntegradorInfo(integradorId);
-            renderIntegradorInfo(integradorInfo);
+            try {
+                const info = await fetchApiData(`${API_URL_GET_INTEGRADOR}?id=${integradorId}`);
+                const initialHtml = `
+                    <div class="integrador-info">
+                        <h1>${info.nome_do_integrador}</h1>
+                        <p><span>${info.numero_de_contato}</span></p>
+                    </div>
+
+                    <div class="clientes-section">
+                        <h2>Clientes Vinculados</h2>
+                        <button class="action-btn" id="btn-show-form">+ Cadastrar Novo Cliente</button>
+                        <ul id="clientes-lista"></ul>
+                    </div>
+
+                    <section id="cadastro-cliente-section">
+                        <h2>Cadastro de Novo Cliente</h2>
+                        <form id="clienteForm">
+                            <div class="form-row">
+                                <div class="form-group"><label for="nome">Nome Completo:</label><input type="text" id="nome" required></div>
+                                <div class="form-group"><label for="documento">CPF/CNPJ:</label><input type="text" id="documento" required></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label for="email">Email:</label><input type="email" id="email" required></div>
+                                <div class="form-group"><label for="telefone">Telefone (Opcional):</label><input type="text" id="telefone"></div>
+                            </div>
+                             <div class="form-group"><label for="endereco_instalacao">Endereço da Instalação:</label><input type="text" id="endereco_instalacao" required></div>
+                            <div class="form-group"><label for="codigo_uc">Código da Unidade Consumidora (UC):</label><input type="text" id="codigo_uc" required></div>
+                            <button type="submit" id="submitClienteBtn">Salvar Cliente</button>
+                            <div id="message-cliente"></div>
+                        </form>
+                    </section>
+                    
+                    <div style="text-align:center;"><a href="index.html" class="back-link">Voltar para a lista de integradores</a></div>
+                `;
+                render(initialHtml);
+
+                // --- Eventos após renderização ---
+                const clienteFormSection = document.getElementById('cadastro-cliente-section');
+                document.getElementById('btn-show-form').addEventListener('click', () => {
+                    clienteFormSection.style.display = clienteFormSection.style.display === 'block' ? 'none' : 'block';
+                });
+                
+                document.getElementById('clienteForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const submitBtn = document.getElementById('submitClienteBtn');
+                    const messageDiv = document.getElementById('message-cliente');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Salvando...';
+                    messageDiv.className = '';
+
+                    const data = {
+                        integrador_id: integradorId,
+                        nome: document.getElementById('nome').value,
+                        documento: document.getElementById('documento').value,
+                        email: document.getElementById('email').value,
+                        telefone: document.getElementById('telefone').value,
+                        codigo_uc: document.getElementById('codigo_uc').value,
+                        endereco_instalacao: document.getElementById('endereco_instalacao').value
+                    };
+
+                    try {
+                        const result = await fetchApiData(API_URL_CADASTRAR_CLIENTE, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        messageDiv.textContent = result.message;
+                        messageDiv.className = 'success';
+                        e.target.reset(); // Limpa o formulário
+                        await refreshClientes(integradorId); // Atualiza a lista
+                    } catch (error) {
+                        messageDiv.textContent = error.message;
+                        messageDiv.className = 'error';
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Salvar Cliente';
+                    }
+                });
+
+                // Carrega a lista de clientes inicial
+                await refreshClientes(integradorId);
+
+            } catch (error) {
+                render(`<div class="error-message">${error.message}</div>`);
+            }
         });
     </script>
 </body>

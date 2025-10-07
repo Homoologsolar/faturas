@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Faturas do Cliente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: #f8f9fa; margin: 20px; }
+        .container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 900px; box-sizing: border-box; }
+        .cliente-header { text-align: center; border-bottom: 1px solid #dee2e6; padding-bottom: 20px; margin-bottom: 30px; }
+        h1 { color: #212529; margin: 0; }
+        h2 { text-align: center; color: #343a40; margin-bottom: 20px; }
+        .cliente-doc { color: #6c757d; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        select.status-select { padding: 5px; border-radius: 6px; border: 1px solid #ced4da; font-weight: 600; }
+        .status-paga { background-color: #d1e7dd; color: #0f5132; }
+        .status-pendente { background-color: #fff3cd; color: #664d03; }
+        .status-vencida { background-color: #f8d7da; color: #842029; }
+        .status-cancelada { background-color: #e2e3e5; color: #41464b; }
+        .pdf-btn { background-color: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .error-message, .no-data { background-color: #f8d7da; color: #842029; padding: 15px; border-radius: 6px; text-align: center; }
+        .back-link { display: inline-block; margin-top: 30px; color: #ff9900; text-decoration: none; font-weight: 600; }
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #28a745; color: white; padding: 15px; border-radius: 8px; z-index: 1000; opacity: 0; transition: opacity 0.5s; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-container">
+        <p id="loading-state">Carregando faturas...</p>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+        const API_URL_GET_FATURAS = 'api/get_faturas.php';
+        const API_URL_UPDATE_STATUS = 'api/atualizar_status_fatura.php';
+        const API_URL_GET_DETALHES_FATURA = 'api/get_detalhes_fatura.php';
+        
+        const container = document.getElementById('main-container');
+
+        // --- Funções Auxiliares ---
+        function getQueryParam(param) { const urlParams = new URLSearchParams(window.location.search); return urlParams.get(param); }
+        function formatDate(dateString) { const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
+        function formatCurrency(value) { return parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.opacity = 1;
+            setTimeout(() => { toast.style.opacity = 0; }, 3000);
+        }
+
+        // --- Função para Mudar Status ---
+        async function changeStatus(selectElement, faturaId) {
+            const novoStatus = selectElement.value;
+            try {
+                const response = await fetch(API_URL_UPDATE_STATUS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fatura_id: faturaId, status: novoStatus })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
+                
+                // Atualiza a cor do select
+                selectElement.className = 'status-select'; // reseta classes
+                selectElement.classList.add(`status-${novoStatus}`);
+                showToast(result.message);
+            } catch (error) {
+                showToast(`Erro: ${error.message}`);
+            }
+        }
+        
+        // --- Função para Exportar PDF ---
+        async function exportarFaturaPDF(faturaId) {
+            try {
+                const response = await fetch(`${API_URL_GET_DETALHES_FATURA}?fatura_id=${faturaId}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Cabeçalho
+                doc.setFontSize(20);
+                doc.text("Fatura de Energia Solar", 105, 20, null, null, "center");
+
+                // Informações do Cliente
+                doc.setFontSize(12);
+                doc.text("CLIENTE:", 14, 40);
+                doc.text(data.fatura.cliente_nome, 14, 46);
+                doc.text(data.fatura.cliente_documento, 14, 52);
+                doc.text(`UC: ${data.fatura.codigo_uc}`, 14, 58);
+
+                // Informações da Fatura
+                doc.text("Nº FATURA:", 140, 40);
+                doc.text(String(data.fatura.id), 170, 40);
+                doc.text("MÊS REFERÊNCIA:", 140, 46);
+                doc.text(formatDate(data.fatura.mes_referencia), 170, 46);
+                doc.text("VENCIMENTO:", 140, 52);
+                doc.text(formatDate(data.fatura.data_vencimento), 170, 52);
+
+                // Tabela de Itens
+                const tableColumn = ["Descrição", "Quantidade (kWh)", "Valor Unit.", "Valor Total"];
+                const tableRows = [];
+                data.itens.forEach(item => {
+                    const itemData = [
+                        item.descricao,
+                        item.quantidade_kwh ? parseFloat(item.quantidade_kwh).toFixed(2) : '-',
+                        item.valor_unitario ? formatCurrency(item.valor_unitario) : '-',
+                        formatCurrency(item.valor_total_item)
+                    ];
+                    tableRows.push(itemData);
+                });
+                
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 70,
+                    theme: 'grid'
+                });
+                
+                // Valor Total
+                let finalY = doc.autoTable.previous.finalY;
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text("VALOR TOTAL:", 140, finalY + 15);
+                doc.text(formatCurrency(data.fatura.valor_total), 170, finalY + 15);
+
+                // Espaço para QR Code
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text("Pague com PIX:", 14, finalY + 30);
+                doc.setLineWidth(0.5);
+                doc.rect(14, finalY + 33, 60, 60); // Desenha o quadrado
+                doc.setFontSize(10);
+                doc.setTextColor(150);
+                doc.text("Cole aqui o seu QR Code", 22, finalY + 65);
+                
+                // Salva o arquivo
+                doc.save(`fatura-${data.fatura.id}.pdf`);
+
+            } catch (error) {
+                alert(`Erro ao gerar PDF: ${error.message}`);
+            }
+        }
+
+        // --- Inicialização da Página ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const clienteId = getQueryParam('cliente_id');
+            if (!clienteId) {
+                container.innerHTML = `<div class="error-message">ID do cliente não fornecido na URL.</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL_GET_FATURAS}?cliente_id=${clienteId}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                let html = `
+                    <div class="cliente-header">
+                        <h1>${data.cliente.nome}</h1>
+                        <p class="cliente-doc">Documento: ${data.cliente.documento}</p>
+                    </div>
+                    <h2>Histórico de Faturas</h2>`;
+
+                if (data.faturas.length > 0) {
+                    const faturasRows = data.faturas.map(fatura => `
+                        <tr>
+                            <td>${formatDate(fatura.mes_referencia)}</td>
+                            <td>${formatDate(fatura.data_vencimento)}</td>
+                            <td>${formatCurrency(fatura.valor_total)}</td>
+                            <td>
+                                <select class="status-select status-${fatura.status}" onchange="changeStatus(this, ${fatura.id})">
+                                    <option value="pendente" ${fatura.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                                    <option value="paga" ${fatura.status === 'paga' ? 'selected' : ''}>Paga</option>
+                                    <option value="vencida" ${fatura.status === 'vencida' ? 'selected' : ''}>Vencida</option>
+                                    <option value="cancelada" ${fatura.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+                                </select>
+                            </td>
+                            <td>
+                                <button class="pdf-btn" onclick="exportarFaturaPDF(${fatura.id})">Exportar PDF</button>
+                            </td>
+                        </tr>`).join('');
+                    
+                    html += `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mês Referência</th>
+                                    <th>Vencimento</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>${faturasRows}</tbody>
+                        </table>`;
+                } else {
+                    html += `<p class="no-data" style="background-color: #e2e3e5; color: #41464b;">Nenhuma fatura encontrada.</p>`;
+                }
+
+                html += `<a href="javascript:history.back()" class="back-link">&larr; Voltar</a>`;
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

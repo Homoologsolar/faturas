@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Lançamento de Leitura e Faturamento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: #f8f9fa; margin: 20px; }
+        .container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px; box-sizing: border-box; }
+        h2 { text-align: center; color: #212529; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        #message { margin-top: 20px; padding: 12px; border-radius: 6px; text-align: center; display: none; }
+        .success { background-color: #d1e7dd; color: #0f5132; display: block; }
+        .error { background-color: #f8d7da; color: #842029; display: block; }
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Lançar Leitura e Gerar Fatura</h2>
+        <form id="leituraForm">
+            <div class="form-group">
+                <label for="instalacao_id">Selecione a Instalação do Cliente:</label>
+                <select id="instalacao_id" required>
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="mes_referencia">Mês de Referência:</label>
+                <input type="month" id="mes_referencia" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="consumo_kwh">Consumo da Rede (kWh):</label>
+                    <input type="number" step="0.01" id="consumo_kwh" placeholder="Ex: 150.50" required>
+                </div>
+                <div class="form-group">
+                    <label for="injecao_kwh">Energia Injetada (kWh):</label>
+                    <input type="number" step="0.01" id="injecao_kwh" placeholder="Ex: 400.75" required>
+                </div>
+            </div>
+            <button type="submit" id="submitBtn">Gerar Fatura</button>
+            <div id="message"></div>
+        </form>
+        <a href="index.html" style="display: block; text-align: center; margin-top: 20px;">Voltar ao Painel Principal</a>
+    </div>
+
+    <script>
+        const API_URL_LIST_INSTALACOES = 'api/listar_instalacoes.php'; // Você precisará criar este script
+        const API_URL_GERAR_FATURA = 'api/gerar_fatura.php';
+
+        const instalacaoSelect = document.getElementById('instalacao_id');
+        const leituraForm = document.getElementById('leituraForm');
+        const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+
+        async function carregarInstalacoes() {
+            try {
+                // Para simplificar, vou assumir que você criará uma API que lista todas as instalações com o nome do cliente.
+                // A query seria: SELECT i.id, i.codigo_uc, c.nome FROM instalacoes i JOIN clientes c ON i.cliente_id = c.id
+                // Por enquanto, vamos simular os dados. Crie um `listar_instalacoes.php` com essa lógica.
+                 const response = await fetch('api/listar_instalacoes.php'); // CRIE ESTE ARQUIVO
+                 const instalacoes = await response.json();
+
+                instalacaoSelect.innerHTML = '<option value="">-- Selecione uma instalação --</option>';
+                instalacoes.forEach(inst => {
+                    const option = new Option(`${inst.nome} - UC: ${inst.codigo_uc}`, inst.id);
+                    instalacaoSelect.add(option);
+                });
+            } catch (error) {
+                instalacaoSelect.innerHTML = '<option value="">Erro ao carregar instalações</option>';
+                console.error(error);
+            }
+        }
+
+        leituraForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processando...';
+            messageDiv.className = '';
+
+            const data = {
+                instalacao_id: document.getElementById('instalacao_id').value,
+                mes_referencia: document.getElementById('mes_referencia').value,
+                consumo_kwh: document.getElementById('consumo_kwh').value,
+                injecao_kwh: document.getElementById('injecao_kwh').value,
+            };
+
+            try {
+                const response = await fetch(API_URL_GERAR_FATURA, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
+                
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'success';
+                leituraForm.reset();
+
+            } catch (error) {
+                messageDiv.textContent = error.message;
+                messageDiv.className = 'error';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gerar Fatura';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', carregarInstalacoes);
+    </script>
+</body>
+</html>

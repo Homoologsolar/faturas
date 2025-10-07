@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$configFile = __DIR__ . '/../../config.php';
+$configFile = __DIR__ . '/../config.php';
 if (!file_exists($configFile)) {
     http_response_code(500);
     echo json_encode(['message' => 'Erro crítico: Arquivo de configuração não encontrado.']);

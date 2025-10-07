@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homolog Solar - Painel de Gestão</title>
+    <title>Homolog Solar - Gestão de Clientes e Integradores</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: #f8f9fa; margin: 20px; }
-        .container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 800px; box-sizing: border-box; margin-bottom: 25px; }
-        h2 { text-align: center; color: #212529; margin-bottom: 25px; border-bottom: 2px solid #ff9900; padding-bottom: 10px;}
+        .container { background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 700px; box-sizing: border-box; margin-bottom: 20px; }
+        h2 { text-align: center; color: #212529; margin-bottom: 25px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057; }
         input[type="text"], input[type="email"], select { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
-        button, .action-link { text-decoration: none; display: inline-block; text-align: center; width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: background-color 0.2s; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
         button:disabled { opacity: 0.7; cursor: not-allowed; }
-        .btn-green { background-color: #28a745; }
-        .btn-green:hover { background-color: #218838; }
-        .btn-orange { background-color: #ff9900; }
-        .btn-orange:hover { background-color: #e68a00; }
-        /* --- Estilo para o novo botão de Ação Principal --- */
-        .btn-blue { background-color: #007bff; }
-        .btn-blue:hover { background-color: #0069d9; }
-        #message-cliente, #message-integrador { margin-top: 20px; padding: 12px; border-radius: 6px; text-align: center; display: none; }
+        #message { margin-top: 20px; padding: 12px; border-radius: 6px; text-align: center; display: none; }
         .success { background-color: #d1e7dd; color: #0f5132; display: block; }
         .error { background-color: #f8d7da; color: #842029; display: block; }
         .form-row { display: flex; flex-wrap: wrap; gap: 20px; }
         .form-row .form-group { flex: 1; min-width: calc(50% - 10px); }
-        #integradores-lista { list-style-type: none; padding: 0; max-height: 400px; overflow-y: auto; }
+        #integradores-lista { list-style-type: none; padding: 0; }
         #integradores-lista li { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ff9900; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .integrador-info .nome { font-weight: 600; }
     </style>
@@ -33,12 +26,7 @@
 <body>
 
     <div class="container">
-        <h2>Ações Rápidas</h2>
-        <a href="lancar_leitura.html" class="action-link btn-blue">Gerar Nova Fatura</a>
-    </div>
-
-    <div class="container">
-        <h2>Cadastrar Novo Cliente</h2>
+        <h2>Cadastro de Novo Cliente</h2>
         <form id="clienteForm">
             <div class="form-group">
                 <label for="integrador_id">Selecione o Integrador Responsável:</label>
@@ -56,41 +44,26 @@
             </div>
             <div class="form-group"><label for="endereco_instalacao">Endereço da Instalação:</label><input type="text" id="endereco_instalacao" required></div>
             <div class="form-group"><label for="codigo_uc">Código da Unidade Consumidora (UC):</label><input type="text" id="codigo_uc" required></div>
-            <button type="submit" id="submitClienteBtn" class="btn-green">Cadastrar Cliente</button>
-            <div id="message-cliente"></div>
-        </form>
-    </div>
-
-    <div class="container">
-        <h2>Cadastrar Novo Integrador</h2>
-        <form id="integradorForm">
-            <div class="form-row">
-                <div class="form-group"><label for="nome_do_integrador">Nome Completo:</label><input type="text" id="nome_do_integrador" required></div>
-                <div class="form-group"><label for="numero_de_contato">Telefone:</label><input type="text" id="numero_de_contato" required></div>
-            </div>
-            <button type="submit" id="submitIntegradorBtn" class="btn-orange">Cadastrar Integrador</button>
-            <div id="message-integrador"></div>
+            <button type="submit" id="submitButton">Cadastrar Cliente</button>
+            <div id="message"></div>
         </form>
     </div>
 
     <div class="container">
         <h2>Integradores Cadastrados</h2>
-        <ul id="integradores-lista"></ul>
+        <ul id="integradores-lista">
+            </ul>
     </div>
 
     <script>
-        // --- Elementos do DOM ---
         const clienteForm = document.getElementById('clienteForm');
-        const integradorForm = document.getElementById('integradorForm');
-        const messageClienteDiv = document.getElementById('message-cliente');
-        const messageIntegradorDiv = document.getElementById('message-integrador');
+        const submitButton = document.getElementById('submitButton');
+        const messageDiv = document.getElementById('message');
         const integradorSelect = document.getElementById('integrador_id');
         const integradoresListaUl = document.getElementById('integradores-lista');
 
-        // --- API Endpoints ---
         const API_URL_LIST_INTEGRADORES = 'api/listar_integradores.php';
         const API_URL_CADASTRAR_CLIENTE = 'api/cadastrar_cliente.php';
-        const API_URL_CADASTRAR_INTEGRADOR = 'api/integrador.php';
 
         async function fetchIntegradores() {
             try {
@@ -98,22 +71,22 @@
                 if (!response.ok) throw new Error('Falha ao carregar integradores.');
                 const integradores = await response.json();
 
+                // Popula o menu de seleção (dropdown)
                 integradorSelect.innerHTML = '<option value="">-- Selecione um integrador --</option>';
-                integradoresListaUl.innerHTML = '';
-
-                if (integradores.length === 0) {
-                     integradoresListaUl.innerHTML = `<li>Nenhum integrador cadastrado.</li>`;
-                }
-
                 integradores.forEach(integrador => {
-                    const option = new Option(`${integrador.nome_do_integrador}`, integrador.id);
+                    const option = new Option(`${integrador.id} - ${integrador.nome_do_integrador}`, integrador.id);
                     integradorSelect.add(option);
-                    
+                });
+
+                // Popula a lista de navegação
+                integradoresListaUl.innerHTML = '';
+                integradores.forEach(integrador => {
                     const li = document.createElement('li');
-                    li.innerHTML = `<div class="integrador-info"><div class="nome">${integrador.nome_do_integrador}</div></div><span>Ver Detalhes &rarr;</span>`;
+                    li.innerHTML = `<div class="integrador-info"><div class="nome">${integrador.nome_do_integrador}</div></div><span>&rarr;</span>`;
                     li.onclick = () => { window.location.href = `integrador.html?id=${integrador.id}`; };
                     integradoresListaUl.appendChild(li);
                 });
+
             } catch (error) {
                 integradorSelect.innerHTML = `<option value="">${error.message}</option>`;
                 integradoresListaUl.innerHTML = `<li>${error.message}</li>`;
@@ -122,10 +95,9 @@
 
         clienteForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitButton = document.getElementById('submitClienteBtn');
             submitButton.disabled = true;
             submitButton.textContent = 'Enviando...';
-            messageClienteDiv.className = '';
+            messageDiv.className = '';
 
             const data = {
                 integrador_id: integradorSelect.value,
@@ -138,51 +110,28 @@
             };
 
             try {
-                const response = await fetch(API_URL_CADASTRAR_CLIENTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const response = await fetch(API_URL_CADASTRAR_CLIENTE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
-                messageClienteDiv.textContent = result.message;
-                messageClienteDiv.className = 'success';
+
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'success';
                 clienteForm.reset();
             } catch (error) {
-                messageClienteDiv.textContent = error.message;
-                messageClienteDiv.className = 'error';
+                messageDiv.textContent = error.message;
+                messageDiv.className = 'error';
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Cadastrar Cliente';
             }
         });
 
-        integradorForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitButton = document.getElementById('submitIntegradorBtn');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Enviando...';
-            messageIntegradorDiv.className = '';
-
-            const data = {
-                nome_do_integrador: document.getElementById('nome_do_integrador').value,
-                numero_de_contato: document.getElementById('numero_de_contato').value
-            };
-
-            try {
-                const response = await fetch(API_URL_CADASTRAR_INTEGRADOR, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-                messageIntegradorDiv.textContent = result.message;
-                messageIntegradorDiv.className = 'success';
-                integradorForm.reset();
-                await fetchIntegradores(); // Atualiza a lista e o select
-            } catch (error) {
-                messageIntegradorDiv.textContent = error.message;
-                messageIntegradorDiv.className = 'error';
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Cadastrar Integrador';
-            }
-        });
-
         document.addEventListener('DOMContentLoaded', fetchIntegradores);
     </script>
+
 </body>
 </html>
